@@ -1,4 +1,4 @@
-use analysis::PopulationVector;
+use population_based_modelling::PopulationVector;
 
 pub fn test() {
     println!("This is the only thing now!");
@@ -10,7 +10,17 @@ mod interface {
     }
 }
 
-mod analysis {
+mod individual_based_modelling {
+    struct Individual {
+        id: usize,
+        age: u16,
+        lifestage: u8,
+        parents: Vec<usize>,
+        genotype: Vec<Vec<u8>>,
+    }
+}
+
+mod population_based_modelling {
     use std::process::Output;
     // use std::iter::Enumerate;
 
