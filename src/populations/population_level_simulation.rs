@@ -1,5 +1,4 @@
-use std::process::Output;
-// use std::iter::Enumerate;
+//! This module contains functions to simulate population demographics (not including genetics) using forward-direction population-level simulations. Populations are represented by matrices and vectors containing demographic and behavioral information.
 
 pub struct PopulationVector {
     vector: Vec<f64>,
