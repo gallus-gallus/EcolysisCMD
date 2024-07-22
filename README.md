@@ -1,5 +1,5 @@
-# EcolysisRS
-EcolysisRS: command line tools for simulation and analysis of ecological systems, written in Rust.
+# EcolysisCMD
+EcolysisCMD: command line tools for simulation and analysis of ecological systems, written in Rust.
 
 **Status:** This project is in its earliest stages. Current short-term goals are:
 - [ ] Provide low-compute-cost Population Viability Analysis using population-level simulation.
