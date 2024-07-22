@@ -1,3 +1,4 @@
+[![Rust](https://github.com/gallus-gallus/EcolysisCMD/actions/workflows/rust.yml/badge.svg)](https://github.com/gallus-gallus/EcolysisCMD/actions/workflows/rust.yml)
 # EcolysisCMD
 EcolysisCMD: command line tools for simulation and analysis of ecological systems, written in Rust.
 
