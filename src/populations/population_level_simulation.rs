@@ -35,7 +35,28 @@ impl LifestageSurvivalVector {
     }
 }
 pub struct PopulationMatrix {
-    pub matrix: Vec<LifestageSurvivalVector>,
+    matrix: Vec<LifestageSurvivalVector>,
+}
+impl PopulationMatrix {
+    /// This function builds a Population Matrix from Lifestage Survival Vectors, ensuring that it contains a consistent
+    /// number of lifestages across all inputted Lifestage Survival Vectors and in the number of
+    /// inputted Lifestage Survival Vectors. If these conditions are not met, it will return an
+    /// error message.
+    pub fn build(input: Vec<LifestageSurvivalVector>) -> Result<PopulationMatrix, &'static str> {
+        if input.len() == input[0].get_vector().len() {
+            for count in 1..input.len() {
+                if input[count].get_vector().len() != input[count - 1].get_vector().len() {
+                    return Err("All lifestage survival vectors must be of matching lengths to construct a population matrix.");
+                }
+            }
+            return Ok(PopulationMatrix { matrix: input });
+        } else {
+            return Err("Number of items in lifestages must match number of inputted lifestages.");
+        }
+    }
+    pub fn get_matrix(&self) -> &Vec<LifestageSurvivalVector> {
+        return &self.matrix;
+    }
 }
 
 /// # Multiply a Population Matrix by a Population vector
@@ -59,15 +80,33 @@ pub struct PopulationMatrix {
 /// This function will return an Err('static str') if the number of life stage items in the matrix is not equal to the number of items in the population vector.
 ///
 /// Although this is theoretically impossible, the program could also panic if it recieves and out-of-bounds index request for the population vector. However, the function checks for this earlier in order to return a useful error code, so should neever occur.
+/// # Esamples
+/// ```
+/// use ecolysis_cmd::populations::population_level_simulation::{LifestageSurvivalVector,
+/// PopulationMatrix, popmatrix_by_popvector, PopulationVector};
+///
+/// let popvector = PopulationVector::new(vec![150.0, 200.0, 33.0]);
+///
+/// let mut lifestage_recruit: Vec<LifestageSurvivalVector> = vec![LifestageSurvivalVector::new(vec![0.25, 0.001, 0.75])];
+/// lifestage_recruit.push(LifestageSurvivalVector::new(vec![0.3, 0.4346, 0.002]));
+/// lifestage_recruit.push(LifestageSurvivalVector::new(vec![0.98, 0.66, 0.161]));
+///
+/// let popmatrix = PopulationMatrix::build(lifestage_recruit).unwrap();
+///
+/// let new_popvector = popmatrix_by_popvector(&popmatrix, &popvector);
+
+/// println!("{:?}", new_popvector.unwrap().get_vector());
+
+/// ```
 pub fn popmatrix_by_popvector(
     matrix: &PopulationMatrix,
     vector: &PopulationVector,
 ) -> Result<PopulationVector, &'static str> {
-    if matrix.matrix.len() != vector.vector.len() {
+    if matrix.get_matrix().len() != vector.get_vector().len() {
         return Err("the length of inputted population matrix and population vector do not match.");
     }
     let mut new_population_vector: Vec<f64> = vec![];
-    for (count, lifestage) in matrix.matrix.iter().enumerate() {
+    for (count, lifestage) in matrix.get_matrix().iter().enumerate() {
         let total: f64 = lifestage.get_vector().iter().sum();
         new_population_vector
             .push(total * vector.get_value_at_index(count as u32)
@@ -79,8 +118,6 @@ pub fn popmatrix_by_popvector(
 
 #[cfg(test)]
 mod tests {
-    //use analysis::{popmatrix_by_popvector, LifestageSurvivalVector, PopulationMatrix};
-
     use super::*;
 
     #[test]
@@ -90,10 +127,8 @@ mod tests {
             vec![LifestageSurvivalVector::new(vec![0.25, 0.001, 10.0])];
         lifestage_recruit.push(LifestageSurvivalVector::new(vec![100.0, 0.4346, 2.0]));
         lifestage_recruit.push(LifestageSurvivalVector::new(vec![66.0, 117.0, 4.0]));
-        let popmatrix = PopulationMatrix {
-            matrix: lifestage_recruit,
-        };
-        // Calculated vectors for tests: vec![vec![37.5, 0.15, 1500], vec![20000, 86.92, 400], vec![2178, 3861, 132]];
+        let popmatrix =
+            PopulationMatrix::build(lifestage_recruit).expect("Invalid population matrix."); // Calculated vectors for tests: vec![vec![37.5, 0.15, 1500], vec![20000, 86.92, 400], vec![2178, 3861, 132]];
         let result: Vec<f64> = vec![1537.65, 20486.92, 6171.0];
         assert_eq!(
             &result,
@@ -104,5 +139,22 @@ mod tests {
                 .map(|x| { (x * 1000000.0).round() / 1000000.0 }) // Rounding is necessary to get rid of floating point errors.
                 .collect::<Vec<_>>(),
         );
+    }
+    #[test]
+    fn matrix_invalid_matrix_length() {
+        assert!(PopulationMatrix::build(vec![
+            LifestageSurvivalVector::new(vec![0.5, 0.7, 0.3]),
+            LifestageSurvivalVector::new(vec![0.1, 0.11, 0.6])
+        ])
+        .is_err());
+    }
+    #[test]
+    fn matrix_unmatched_lifestage_lengths() {
+        assert!(PopulationMatrix::build(vec![
+            LifestageSurvivalVector::new(vec![0.5, 0.7, 0.3]),
+            LifestageSurvivalVector::new(vec![0.1, 0.11, 0.6]),
+            LifestageSurvivalVector::new(vec![0.2, 0.91])
+        ])
+        .is_err());
     }
 }

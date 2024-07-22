@@ -1,5 +1,5 @@
 [package]
-name = "ecolysis-rs"
+name = "ecolysis_cmd"
 version = "0.1.0"
 edition = "2021"
 

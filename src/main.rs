@@ -1,7 +1,7 @@
-use ecolysis_rs::*;
+use ecolysis_cmd::*;
 
 fn main() {
     println!("Welcome to Ecolysis RS, a Rust tool for ecologicial simulation and analysis.");
-    ecolysis_rs::test();
+    ecolysis_cmd::test();
     // Testing git. 2
 }

@@ -1,4 +1,4 @@
-mod populations;
+pub mod populations;
 
 pub fn test() {
     println!("This is the only thing now!");
