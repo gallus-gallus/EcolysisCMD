@@ -1,5 +1,5 @@
 //! This module contains functions to simulate population demographics (not including genetics) using forward-direction population-level simulations. Populations are represented by matrices and vectors containing demographic and behavioral information.
-
+#[derive(Clone)]
 pub struct PopulationVector {
     vector: Vec<f64>,
     lifestage_count: u8,
@@ -116,6 +116,20 @@ pub fn popmatrix_by_popvector(
     Ok(PopulationVector::new(new_population_vector))
 }
 
+pub fn PVA_simple_projection_matrix(
+    initial_population: &PopulationVector,
+    projection_matrix: &PopulationMatrix,
+    iterations: u32,
+) -> Result<Vec<PopulationVector>, &'static str> {
+    let mut active_vector = initial_population.clone();
+    let mut result: Vec<PopulationVector> = Vec::new();
+    for _ in 1..=iterations {
+        active_vector = popmatrix_by_popvector(&projection_matrix, &active_vector)?;
+        result.push(active_vector.clone());
+    }
+    return Ok(result);
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -156,5 +170,30 @@ mod tests {
             LifestageSurvivalVector::new(vec![0.2, 0.91])
         ])
         .is_err());
+    }
+    #[test]
+    fn PVA_simple_matrix_projection_test() {
+        let population = PopulationVector::new(vec![15.0, 155.0, 200.0]);
+        let matrix = PopulationMatrix::build(vec![
+            LifestageSurvivalVector::new(vec![0.0, 0.0, 0.7]),
+            LifestageSurvivalVector::new(vec![0.5, 0.8, 0.0]),
+            LifestageSurvivalVector::new(vec![0.0, 0.7, 0.91]),
+        ])
+        .unwrap();
+        let result = PVA_simple_projection_matrix(&population, &matrix, 8 as u32).unwrap();
+        for i in result.iter() {
+            println!("{:?}", i.get_vector());
+        }
+        let correct_result = vec![0.9, 1264.4, 9028.9];
+        let mut temp_vec: Vec<f64> = Vec::new();
+        let mut clean_output: Vec<Vec<f64>> = Vec::new();
+        for i in result {
+            for j in i.get_vector() {
+                temp_vec.push(((j * 10.0 as f64).round()) / 10.0);
+            }
+            clean_output.push(temp_vec);
+            temp_vec = vec![];
+        }
+        assert_eq!(correct_result, clean_output[clean_output.len() - 1])
     }
 }
