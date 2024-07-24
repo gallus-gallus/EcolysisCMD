@@ -9,3 +9,6 @@ EcolysisCMD: command line tools for simulation and analysis of ecological system
 **Ultimate Goal:** Provide the backend for an easy-to-use library of tools for ecologists and managers, implemented in a user-friendly UI (separate repo), specifically emphasizing accessibility for nonprofit and community conservation applications.
 
 **Open Source!** Feel free to contribute, provide bug reports, etc.
+
+# Other Software
+Need something else? Check out our [Other Software](https://github.com/gallus-gallus/EcolysisCMD/wiki/Similar-Software) wiki page for a list of related software packages!
