@@ -118,18 +118,67 @@ impl PopulationMatrix {
     }
 }
 
-pub fn PVA_simple_projection_matrix(
-    initial_population: &PopulationVector,
-    projection_matrix: &PopulationMatrix,
-    iterations: u32,
-) -> Result<Vec<PopulationVector>, &'static str> {
-    let mut active_vector = initial_population.clone();
-    let mut result: Vec<PopulationVector> = Vec::new();
-    for _ in 1..=iterations {
-        active_vector = projection_matrix.project_vector(&active_vector)?;
-        result.push(active_vector.clone());
+pub struct PvaPopulation {
+    initial_population: PopulationVector,
+    projection_matrices: Vec<PopulationMatrix>,
+}
+impl PvaPopulation {
+    pub fn new(init_pop: PopulationVector, matrices: Vec<PopulationMatrix>) -> PvaPopulation {
+        PvaPopulation {
+            initial_population: init_pop,
+            projection_matrices: matrices,
+        }
     }
-    return Ok(result);
+    pub fn deterministic_projection(&self, iterations: u32) -> Result<PvaOutput, &'static str> {
+        if self.projection_matrices.len() > 1 {
+            return Err("Deterministic Population Viability Analysis is only avaialble for PvaPopulation instances containing a single prjection matrix.");
+        } else {
+            let mut active_vector = self.initial_population.clone();
+            let mut result: Vec<PopulationVector> = Vec::new();
+            for _ in 1..=iterations {
+                active_vector = self.projection_matrices[0].project_vector(&active_vector)?;
+                result.push(active_vector.clone());
+            }
+            return Ok(PvaOutput::Deterministic(result));
+        }
+    }
+}
+
+pub enum PvaOutput {
+    Deterministic(Vec<PopulationVector>),
+    Stochastic,
+}
+impl PvaOutput {
+    pub fn print_output(&self) {
+        match self {
+            PvaOutput::Deterministic(data) => {
+                let mut string = String::new();
+                for (counti, i) in data.iter().enumerate() {
+                    for (countj, j) in i.get_vector().iter().enumerate() {
+                        string.push_str(&j.to_string());
+                        if countj + 1 < i.get_vector().len() {
+                            string.push_str(", ");
+                        }
+                    }
+                    if counti + 1 < data.len() {
+                        string.push_str("\n");
+                    }
+                }
+                println!("{}", string);
+            }
+            PvaOutput::Stochastic => {
+                eprintln!("Not implemented.")
+            }
+        }
+    }
+    pub fn return_determinsitic_output(&self) -> Result<&Vec<PopulationVector>, &'static str> {
+        match self {
+            PvaOutput::Deterministic(data) => Ok(data),
+            PvaOutput::Stochastic => {
+                Err("This function is only avaialble for determinisitc models.")
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -175,22 +224,21 @@ mod tests {
         .is_err());
     }
     #[test]
-    fn PVA_simple_matrix_projection_test() {
-        let population = PopulationVector::new(vec![15.0, 155.0, 200.0]);
+    fn pva_simple_matrix_projection_test() {
+        let population_vec = PopulationVector::new(vec![15.0, 155.0, 200.0]);
         let matrix = PopulationMatrix::build(vec![
             LifestageSurvivalVector::new(vec![0.0, 0.0, 0.7]),
             LifestageSurvivalVector::new(vec![0.5, 0.8, 0.0]),
             LifestageSurvivalVector::new(vec![0.0, 0.7, 0.91]),
         ])
         .unwrap();
-        let result = PVA_simple_projection_matrix(&population, &matrix, 8 as u32).unwrap();
-        for i in result.iter() {
-            println!("{:?}", i.get_vector());
-        }
+        let population = PvaPopulation::new(population_vec, vec![matrix]);
+        let result = population.deterministic_projection(8).unwrap();
+        result.print_output();
         let correct_result = vec![0.9, 1264.4, 9028.9];
         let mut temp_vec: Vec<f64> = Vec::new();
         let mut clean_output: Vec<Vec<f64>> = Vec::new();
-        for i in result {
+        for i in result.return_determinsitic_output().unwrap() {
             for j in i.get_vector() {
                 temp_vec.push(((j * 10.0 as f64).round()) / 10.0);
             }
