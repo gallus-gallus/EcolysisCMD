@@ -17,10 +17,14 @@ impl PopulationVector {
     pub fn get_vector(&self) -> &Vec<f64> {
         return &self.vector;
     }
+    pub fn get_lifestage_count(&self) -> u8 {
+        return self.lifestage_count;
+    }
 }
 
 pub struct PopulationMatrix {
     matrix: Vec<Vec<f64>>,
+    lifestage_count: u8,
 }
 impl PopulationMatrix {
     /// This function builds a Population Matrix from a square vector of vectors, ensuring that it contains a consistent
@@ -34,10 +38,16 @@ impl PopulationMatrix {
                     return Err("All sub-vectors must be of matching lengths to construct a population matrix.");
                 }
             }
-            return Ok(PopulationMatrix { matrix: input });
+            return Ok(PopulationMatrix {
+                lifestage_count: input.len() as u8,
+                matrix: input,
+            });
         } else {
             return Err("Number of items in lifestages must match number of inputted sub-vectors.");
         }
+    }
+    pub fn get_lifestage_count(&self) -> u8 {
+        return self.lifestage_count;
     }
     pub fn get_matrix(&self) -> &Vec<Vec<f64>> {
         return &self.matrix;
@@ -85,7 +95,7 @@ impl PopulationMatrix {
         &self,
         vector: &PopulationVector,
     ) -> Result<PopulationVector, &'static str> {
-        if self.matrix.len() != vector.get_vector().len() {
+        if self.lifestage_count != vector.get_lifestage_count() {
             return Err(
                 "the length of inputted population matrix and population vector do not match.",
             );
@@ -107,11 +117,25 @@ pub struct PvaPopulation {
     projection_matrices: Vec<PopulationMatrix>,
 }
 impl PvaPopulation {
-    pub fn new(init_pop: PopulationVector, matrices: Vec<PopulationMatrix>) -> PvaPopulation {
-        PvaPopulation {
+    pub fn build(
+        init_pop: PopulationVector,
+        matrices: Vec<PopulationMatrix>,
+    ) -> Result<PvaPopulation, &'static str> {
+        let expected_lifestage_length = init_pop.get_lifestage_count();
+        if matrices[0].get_lifestage_count() != expected_lifestage_length {
+            return Err("Population vector size does not match matrices.");
+        }
+        if matrices.len() > 1 {
+            for i in 1..matrices.len() {
+                if matrices[i].get_lifestage_count() != expected_lifestage_length {
+                    return Err("Matrices are not of consistent length.");
+                }
+            }
+        }
+        Ok(PvaPopulation {
             initial_population: init_pop,
             projection_matrices: matrices,
-        }
+        })
     }
     pub fn deterministic_projection(&self, iterations: u32) -> Result<PvaOutput, &'static str> {
         if self.projection_matrices.len() > 1 {
@@ -211,7 +235,7 @@ mod tests {
             vec![0.0, 0.7, 0.91],
         ])
         .unwrap();
-        let population = PvaPopulation::new(population_vec, vec![matrix]);
+        let population = PvaPopulation::build(population_vec, vec![matrix]).unwrap();
         let result = population.deterministic_projection(8).unwrap();
         result.print_output();
         let correct_result = vec![0.9, 1264.4, 9028.9];
