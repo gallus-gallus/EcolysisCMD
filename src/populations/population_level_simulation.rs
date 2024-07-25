@@ -86,43 +86,35 @@ impl PopulationMatrix {
         return &self.matrix;
     }
 
-    /// # Multiply a Population Matrix by a Population vector
-    /// ## Contract
     /// Given an input of a PopulationMatrix and a PopulationVector with the same number of items
     /// in their `matrix` and `vector` values respectively, the function will return a
     /// PopulationMatrix.
     /// ##Use
-    /// This function multiplies a vector by a matrix, but does so in the context of relevant types.
-    /// This function takes a population matrix (formatted as a PopulationMatrix struct) and a population vector (formatted as a PopulationVector struct) as an imput, calculating the sum of the components of each LifeStageSurvivalVector within the population matrix and muliplying it by the value of the population vector at the same index. It then returns a new PopulationVector.
+    /// This function takes a population matrix (formatted as a PopulationMatrix struct) and a population vector (formatted as a PopulationVector struct) as an imput, calculating the sum of the components of each column of the vector within the population matrix and muliplying it by the value of the population vector at the same index. This is essentially a column-wise matrix-vector product. It then returns a new PopulationVector.
     ///
     /// This can be visually thought of as such:
     ///
-    ///[1]   [11,  2, 0.5 ]   [ 13.5]
-    ///[5] x [ 1, 10, 3   ] = [ 70  ]
-    ///[8]   [20,  6, 0.25]   [210  ]
+    ///[ 40]   [0  , 0  , 0.1 ]   [ 10]
+    ///[ 20] x [0.6, 0.8, 0   ] = [ 40]
+    ///[100]   [0  , 0.8, 0.95]   [111]
     ///
     ///This calculation is common in Population Variability Analysis (PVA) wherein each row (LifeStageSurvivalVector) represents the probability of recruitment into that life stage over the course of a year. By multiplying a matrix of these probabilities by a vector containing the current population, a researcher can estimate the following year's population.
     ///
     /// ## Errors
-    /// This function will return an Err('static str') if the number of life stage items in the matrix is not equal to the number of items in the population vector.
+    /// This function will return an Err('static str') if the number of rows or items within rows in the matrix is not equal to the number of items in the population vector.
     ///
-    /// Although this is theoretically impossible, the program could also panic if it recieves and out-of-bounds index request for the population vector. However, the function checks for this earlier in order to return a useful error code, so should never occur.
+    /// Although this is theoretically impossible, the program could also panic if it recieves an out-of-bounds index request for the population vector. However, the function checks for this earlier in order to return a useful error code and prevent other mistakes, so should never occur.
     /// # Examples
     /// ```
-    /// use ecolysis_cmd::populations::population_level_simulation::{PopulationMatrix, PopulationVector};
-    ///
-    /// let popvector = PopulationVector::new(vec![150.0, 200.0, 33.0]);
-    ///
-    /// let mut lifestage_recruit: Vec<Vec<f64>> = vec![vec![0.25, 0.001, 0.75]];
-    /// lifestage_recruit.push(vec![0.3, 0.4346, 0.002]);
-    /// lifestage_recruit.push(vec![0.98, 0.66, 0.161]);
-    ///
-    /// let popmatrix = PopulationMatrix::build(lifestage_recruit).unwrap();
-    ///
-    /// let new_popvector = popmatrix.project_vector(&popvector);
-
-    /// println!("{:?}", new_popvector.unwrap().get_vector());
-
+    /// use ecolysis_cmd::populations::population_level_simulation::{PopulationMatrix, PopulationVector}; // import relevant structs
+    /// let popvector = PopulationVector::new(vec![150.0, 200.0, 33.0]); // create a population vector type
+    /// let popmatrix = PopulationMatrix::build(vec![
+    /// vec![0.25, 0.001, 0.75],
+    /// vec![0.3, 0.4346, 0.002],
+    /// vec![0.98, 0.66, 0.161]
+    /// ]).unwrap(); // create a Population Matrix type
+    /// let new_popvector = popmatrix.project_vector(&popvector); // project the vector by the matrix
+    /// println!("{:?}", new_popvector.unwrap().get_vector()); // print results
     /// ```
     pub fn project_vector(
         &self,
@@ -149,11 +141,24 @@ impl PopulationMatrix {
     }
 }
 
+/// The PvaPopulation struct stores population data, allowing PVA operations to be performed by simply calling
+/// functions on an instance. It contains the following:
+/// - A Population Vector representing the initial population size.
+/// - An array of Population Matrices (Vec<PopulationMatrix>) contains data on the survival rates
+/// and recruitment rates of verious lifestages. The struct can contain an arbitrary number of
+/// Population Matrices to support stochastic models. However, deterministic models should only
+/// have one item in the vector.
 pub struct PvaPopulation {
     initial_population: PopulationVector,
     projection_matrices: Vec<PopulationMatrix>,
 }
 impl PvaPopulation {
+    /// Return a Result enum containing a new PvaPopulation instance with the input of a Population Vector and a Vector
+    /// containing one or multiple Population Matrices. Deterministic models should contain only
+    /// one Population Matrix in the latter vector.
+    /// # Errors
+    /// Will return `Err<'static str>` if the lengths of the Population Vector and all the Population
+    /// Matrices do not match.
     pub fn build(
         init_pop: PopulationVector,
         matrices: Vec<PopulationMatrix>,
@@ -174,6 +179,15 @@ impl PvaPopulation {
             projection_matrices: matrices,
         })
     }
+    // Return a Result enum containing a PVAOutput type that holds the output of a determinisitc simulation
+    // given the number of simulation steps to perform (as a u32). This function performs the
+    // actual simulation.
+    //
+    // The PVA Population on which this simulation is run should contain only one Population
+    // Matrix. If it contains more, the function will return an `Err('static str)`. The function
+    // may also return an error of the same type if the Populatiom Matrix is not square or the
+    // lengths of Population Vector and Population Matrix squared, although this situation should
+    // be prevented by checks when building a PVA Population instance.
     pub fn deterministic_projection(&self, iterations: u32) -> Result<PvaOutput, &'static str> {
         if self.projection_matrices.len() > 1 {
             return Err("Deterministic Population Viability Analysis is only avaialble for PvaPopulation instances containing a single prjection matrix.");
@@ -189,11 +203,14 @@ impl PvaPopulation {
     }
 }
 
+/// This enum stores the output of Population Viability Analysis operations performed by the PVA
+/// Population struct.
 pub enum PvaOutput {
     Deterministic(Vec<PopulationVector>),
     Stochastic,
 }
 impl PvaOutput {
+    /// Print a CSV containing the output of each simulation step to the console.
     pub fn print_output(&self) {
         match self {
             PvaOutput::Deterministic(data) => {
@@ -216,6 +233,8 @@ impl PvaOutput {
             }
         }
     }
+    /// Return a Result enum containg a vector of Population Vectors representing all the data from
+    /// each step of the simulation for a determinisitc model.
     pub fn return_determinsitic_output(&self) -> Result<&Vec<PopulationVector>, &'static str> {
         match self {
             PvaOutput::Deterministic(data) => Ok(data),
