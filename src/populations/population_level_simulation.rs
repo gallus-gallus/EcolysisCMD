@@ -1,33 +1,63 @@
 //! This module contains functions to simulate population demographics (not including genetics) using forward-direction population-level simulations. Populations are represented by matrices and vectors containing demographic and behavioral information.
+
+/// This struct represents a population by a (typically integer) vector. Each value of the vector represents the number of individuals in a lifestage present in the population. For example, a population with 15 hatchlings, 8 juveniles, and 30 adults could be represented by this vector: `[15, 8, 30]`. This struct is meant to contain this type of information. The data is stored as f64 (floating point) values to accommodate conditions when decimal populations are desirable and facilitate calculations that may not return integer values.
 #[derive(Clone)]
 pub struct PopulationVector {
     vector: Vec<f64>,
     lifestage_count: u8,
 }
 impl PopulationVector {
+    /// Create a new Population Vector instance by inputting a vector containing f64 values.
     pub fn new(vector: Vec<f64>) -> PopulationVector {
         PopulationVector {
             lifestage_count: vector.len() as u8,
             vector: vector,
         }
     }
+    /// Return the value stored at a specifc index in the Population Vector based on inputed
+    /// integer (u32). The first value is 0.
     pub fn get_value_at_index(&self, index: u32) -> Option<&f64> {
         self.vector.get(index as usize)
     }
+    // Return full vector stored in the Population Vector as a `Vec<f64>`.
     pub fn get_vector(&self) -> &Vec<f64> {
         return &self.vector;
     }
+    // Return the number of items stored in the Population Vector instance. This is used to prevent
+    // errors in calculations that require matching vector/matrix lengths.
     pub fn get_lifestage_count(&self) -> u8 {
         return self.lifestage_count;
     }
 }
 
+/// This struct represents the likelihood of different lifestages of an organism to survive, grow,
+/// and reproduce to the next lifestage (or stay in the same lifestage) by storing decimal (f64) values in a matrix (a vector of vectors, denoted
+/// `Vec<Vec<f64>>`). Each sub-vector (row) represents a lifestage, and each item (column)
+/// represents the yearly proportion of individuals recruited to that lifestage. The first row typically represents newborns, seedlings, etc.
+///
+/// ## Examples
+/// Index [1][1] is the number of lifestage 1 individuals that were in lifestage 1 the
+/// previous year.
+///
+/// Index [1][2] is the number of of lifestage 1 indidviduals that were in lifestage 2 the year
+/// before.
+///
+/// Indeg [2][1] is the number of lifestage 2 individuals who were lifetage 1 individuals the
+/// previous year.
+///
+/// ...etc...
+///
+/// An example matrix could look like this:
+/// [0][0][0.1][0.2]
+/// [0.6][0][0][0]
+/// [0][0.8][0][0]
+/// [0][0][0.8][0.94]
 pub struct PopulationMatrix {
     matrix: Vec<Vec<f64>>,
     lifestage_count: u8,
 }
 impl PopulationMatrix {
-    /// This function builds a Population Matrix from a square vector of vectors, ensuring that it contains a consistent
+    /// This function builds a Population Matrix from a square vector of vectors (Vec<Vec<f64>>), ensuring that it contains a consistent
     /// number of lifestages across all inputted Lifestage Survival Vectors and in the number of
     /// inputted Lifestage Survival Vectors. If these conditions are not met, it will return an
     /// error message.
@@ -46,9 +76,12 @@ impl PopulationMatrix {
             return Err("Number of items in lifestages must match number of inputted sub-vectors.");
         }
     }
+    /// Returns the number of listages represented in the Population Matrix, useful for calculations requiring
+    /// matching numbers of lifestages.
     pub fn get_lifestage_count(&self) -> u8 {
         return self.lifestage_count;
     }
+    /// Returns the full matrix of matrices stored in the Population Matrix.
     pub fn get_matrix(&self) -> &Vec<Vec<f64>> {
         return &self.matrix;
     }
