@@ -1,6 +1,6 @@
 //! This module contains functions to simulate population demographics (not including genetics) using forward-direction population-level simulations. Populations are represented by matrices and vectors containing demographic and behavioral information.
 
-/// This struct represents a population by a (typically integer) vector. Each value of the vector represents the number of individuals in a lifestage present in the population. For example, a population with 15 hatchlings, 8 juveniles, and 30 adults could be represented by this vector: `[15, 8, 30]`. This struct is meant to contain this type of information. The data is stored as f64 (floating point) values to accommodate conditions when decimal populations are desirable and facilitate calculations that may not return integer values.
+/// This struct represents a population by a (typically integer) vector. Each value of the vector represents the number of individuals in a lifestage present in the population. For example, a population with 15 hatchlings, 8 juveniles, and 30 adults could be represented by this vector: `[40, 20, 100]`. This struct is meant to contain this type of information. The data is stored as f64 (floating point) values to accommodate conditions when decimal populations are desirable and facilitate calculations that may not return integer values.
 #[derive(Clone)]
 pub struct PopulationVector {
     vector: Vec<f64>,
@@ -134,12 +134,16 @@ impl PopulationMatrix {
             );
         }
         let mut new_population_vector: Vec<f64> = vec![];
-        for (count, lifestage) in self.matrix.iter().enumerate() {
-            let total: f64 = lifestage.iter().sum();
-            new_population_vector
-                .push(total * vector.get_value_at_index(count as u32)
-                .expect("Unexpected Error: the length of inputted population matrix and population vector do not match."));
-            // This .expect should never panic. The earlier check for matching vector lengths should ensure this.
+        let mut storage: f64 = 0.0;
+        for lifestage in &self.matrix {
+            for (count2, item) in lifestage.iter().enumerate() {
+                storage += item
+                    * vector
+                        .get_value_at_index(count2 as u32)
+                        .expect("Index out of bounds.");
+            }
+            new_population_vector.push(storage);
+            storage = 0.0;
         }
         Ok(PopulationVector::new(new_population_vector))
     }
@@ -228,13 +232,13 @@ mod tests {
 
     #[test]
     fn matrix_multiplication() {
-        let popvector = PopulationVector::new(vec![150.0, 200.0, 33.0]);
-        let mut lifestage_recruit: Vec<Vec<f64>> = vec![vec![0.25, 0.001, 10.0]];
-        lifestage_recruit.push(vec![100.0, 0.4346, 2.0]);
-        lifestage_recruit.push(vec![66.0, 117.0, 4.0]);
+        let popvector = PopulationVector::new(vec![40.0, 20.0, 100.0]);
+        let mut lifestage_recruit: Vec<Vec<f64>> = vec![vec![0.0, 0.0, 0.1]];
+        lifestage_recruit.push(vec![0.6, 0.8, 0.0]);
+        lifestage_recruit.push(vec![0.0, 0.8, 0.95]);
         let popmatrix =
             PopulationMatrix::build(lifestage_recruit).expect("Invalid population matrix."); // Calculated vectors for tests: vec![vec![37.5, 0.15, 1500], vec![20000, 86.92, 400], vec![2178, 3861, 132]];
-        let result: Vec<f64> = vec![1537.65, 20486.92, 6171.0];
+        let result: Vec<f64> = vec![10.0, 40.0, 111.0];
         assert_eq!(
             &result,
             &popmatrix
@@ -242,7 +246,7 @@ mod tests {
                 .unwrap()
                 .get_vector()
                 .into_iter()
-                .map(|x| { (x * 1000000.0).round() / 1000000.0 }) // Rounding is necessary to get rid of floating point errors.
+                .map(|x| { (x * 10.0).round() / 10.0 }) // Rounding is necessary to get rid of floating point errors.
                 .collect::<Vec<_>>(),
         );
     }
@@ -261,17 +265,17 @@ mod tests {
     }
     #[test]
     fn pva_simple_matrix_projection_test() {
-        let population_vec = PopulationVector::new(vec![15.0, 155.0, 200.0]);
+        let population_vec = PopulationVector::new(vec![40.0, 20.0, 100.0]);
         let matrix = PopulationMatrix::build(vec![
-            vec![0.0, 0.0, 0.7],
-            vec![0.5, 0.8, 0.0],
-            vec![0.0, 0.7, 0.91],
+            vec![0.0, 0.0, 0.1],
+            vec![0.6, 0.8, 0.0],
+            vec![0.0, 0.8, 0.95],
         ])
         .unwrap();
         let population = PvaPopulation::build(population_vec, vec![matrix]).unwrap();
         let result = population.deterministic_projection(8).unwrap();
         result.print_output();
-        let correct_result = vec![0.9, 1264.4, 9028.9];
+        let correct_result = vec![24.9, 50.8, 273.5];
         let mut temp_vec: Vec<f64> = Vec::new();
         let mut clean_output: Vec<Vec<f64>> = Vec::new();
         for i in result.return_determinsitic_output().unwrap() {
