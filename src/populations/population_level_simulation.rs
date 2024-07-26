@@ -141,24 +141,19 @@ impl PopulationMatrix {
     }
 }
 
-/// The PvaDeterministicPopulation struct stores population data, allowing PVA operations to be performed by simply calling
+/// The PvaDeterministicPopulation struct stores population data for deterministic PVA models, allowing PVA operations to be performed by simply calling
 /// functions on an instance. It contains the following:
 /// - A Population Vector representing the initial population size.
-/// - An array of Population Matrices (Vec<PopulationMatrix>) contains data on the survival rates
-/// and recruitment rates of verious lifestages. The struct can contain an arbitrary number of
-/// Population Matrices to support stochastic models. However, deterministic models should only
-/// have one item in the vector.
+/// - A Population Matrix contains data on the survival rates
+/// and recruitment rates of verious lifestages.
 pub struct PvaDeterministicPopulation {
     initial_population: PopulationVector,
     projection_matrix: PopulationMatrix,
 }
 impl PvaDeterministicPopulation {
-    /// Return a Result enum containing a new PvaDeterministicPopulation instance with the input of a Population Vector and a Vector
-    /// containing one or multiple Population Matrices. Deterministic models should contain only
-    /// one Population Matrix in the latter vector.
+    /// Return a Result enum containing a new PvaDeterministicPopulation instance with the input of a Population Vector and a Population Matrix.    /// one Population Matrix in the latter vector.
     /// # Errors
-    /// Will return `Err<'static str>` if the lengths of the Population Vector and all the Population
-    /// Matrices do not match.
+    /// Will return `Err<'static str>` if the lengths of the Population Vector the Matrix do not match.
     pub fn build(
         init_pop: PopulationVector,
         matrix: PopulationMatrix,
@@ -172,35 +167,32 @@ impl PvaDeterministicPopulation {
             projection_matrix: matrix,
         })
     }
-    // Return a Result enum containing a PVAOutput type that holds the output of a determinisitc simulation
+    // Return a Result enum containing a PvaDeterministicOutput type that holds the output of a determinisitc simulation
     // given the number of simulation steps to perform (as a u32). This function performs the
     // actual simulation.
     //
-    // The PVA Population on which this simulation is run should contain only one Population
-    // Matrix. If it contains more, the function will return an `Err('static str)`. The function
-    // may also return an error of the same type if the Populatiom Matrix is not square or the
-    // lengths of Population Vector and Population Matrix squared, although this situation should
+    // The function may panic if the Populatiom Matrix is not square or the
+    // lengths of Population Vector and Population Matrix do not match, although this situation should
     // be prevented by checks when building a PVA Population instance.
-    pub fn deterministic_projection(
-        &self,
-        iterations: u32,
-    ) -> Result<PvaDeterministicOutput, &'static str> {
+    pub fn deterministic_projection(&self, iterations: u32) -> PvaDeterministicOutput {
         let mut active_vector = self.initial_population.clone();
         let mut result: Vec<PopulationVector> = Vec::new();
         for _ in 1..=iterations {
-            active_vector = self.projection_matrix.project_vector(&active_vector)?;
+            active_vector = self.projection_matrix.project_vector(&active_vector).expect("This error should not be possible. Mismatched Vector and Matrix lengths, or non-square Matrix. Please file a bug report.");
             result.push(active_vector.clone());
         }
-        return Ok(PvaDeterministicOutput::new(result));
+        return PvaDeterministicOutput::new(result);
     }
 }
 
 /// This enum stores the output of Population Viability Analysis operations performed by the PVA
-/// Population struct.
+/// Deterministic Population struct.
 pub struct PvaDeterministicOutput {
     result: Vec<PopulationVector>,
 }
 impl PvaDeterministicOutput {
+    // Create a new PvaDeterministicOutput struct from a vector of PopulationVectors
+    // (Vec<PopulationVector>).
     pub fn new(simulation_output: Vec<PopulationVector>) -> PvaDeterministicOutput {
         return PvaDeterministicOutput {
             result: simulation_output,
@@ -276,7 +268,7 @@ mod tests {
         ])
         .unwrap();
         let population = PvaDeterministicPopulation::build(population_vec, matrix).unwrap();
-        let result = population.deterministic_projection(8).unwrap();
+        let result = population.deterministic_projection(8);
         result.print_output();
         let correct_result = vec![24.9, 50.8, 273.5];
         let mut temp_vec: Vec<f64> = Vec::new();
