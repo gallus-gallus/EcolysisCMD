@@ -22,13 +22,15 @@ Use your Command Line Interface to navigate to the file location where you want 
 
 Run `git clone https://github.com/gallus-gallus/EcolysisCMD.git` in your Command Line Interface. The project files are now saved on your computer.
 
-You can use `cargo run` in your Command Line Interface to run the program. The `cargo build --release` command will create an optimized binary for your system, found under `~/yourpath/ecolysis_rs/src/target/release/ecolysis_cmd.[binary_extnsion_for_your_system]`.
+Use your Command Line Interface to navigate into the project folder ('cd EcolysisCMD` in Bash/Zsh on a Unix-based system).
+
+To run the program, you can use `cargo run` in your Command Line Interface. The `cargo build --release` command will create an optimized binary for your system, found under `~/yourpath/ecolysis_rs/src/target/release/ecolysis_cmd.[binary_extnsion_for_your_system]`.
 ### Download Files
-Download the project files by clicking on the greed "code" button at the top of this page. Select "Download ZIP" at the bottom of the dropdown. Unzip the downloaded file and save it to a location of your choice.
+Download the project files by clicking the green "code" button at the top of this page. Select "Download ZIP" at the bottom of the dropdown. Unzip the downloaded file and save it to a location of your choice.
 
-Use your Command Line Interface to navigate to the file location where you saved the project folder (`cd ~/filepath/` in Bash/Zsh on a Unix-based system).
+Use your Command Line Interface to navigate to the file location where you saved the project folder, and then enter the project folder (`cd ~/filepath/EcolysisCMD/` in Bash/Zsh on a Unix-based system).
 
-You can now use `cargo run` in your Command Line Interface to run the program. The `cargo build --release` command will create an optimized binary for your system, found under `~/yourpath/ecolysis_rs/src/target/release/ecolysis_cmd.[binary_extnsion_for_your_system]`.
+To run the program, you can now use `cargo run` in your Command Line Interface. The `cargo build --release` command will create an optimized binary for your system, found under `~/yourpath/ecolysis_rs/src/target/release/ecolysis_cmd.[binary_extnsion_for_your_system]`.
 
 # Other Software
 Need something else? Check out our [Other Software](https://github.com/gallus-gallus/EcolysisCMD/wiki/Similar-Software) wiki page for a list of related software packages!
