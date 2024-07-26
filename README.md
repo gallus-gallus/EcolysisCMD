@@ -22,7 +22,7 @@ Use your Command Line Interface to navigate to the file location where you want 
 
 Run `git clone https://github.com/gallus-gallus/EcolysisCMD.git` in your Command Line Interface. The project files are now saved on your computer.
 
-Use your Command Line Interface to navigate into the project folder ('cd EcolysisCMD` in Bash/Zsh on a Unix-based system).
+Use your Command Line Interface to navigate into the project folder (`cd EcolysisCMD` in Bash/Zsh on a Unix-based system).
 
 To run the program, you can use `cargo run` in your Command Line Interface. The `cargo build --release` command will create an optimized binary for your system, found under `~/yourpath/ecolysis_rs/src/target/release/ecolysis_cmd.[binary_extnsion_for_your_system]`.
 ### Download Files
