@@ -155,25 +155,59 @@ impl PvaDeterministicPopulation {
     /// # Errors
     /// Will return `Err<'static str>` if the lengths of the Population Vector the Matrix do not match.
     pub fn build(
-        init_pop: PopulationVector,
+        initial_population: PopulationVector,
         matrix: PopulationMatrix,
     ) -> Result<PvaDeterministicPopulation, &'static str> {
-        let expected_lifestage_length = init_pop.get_lifestage_count();
+        let expected_lifestage_length = initial_population.get_lifestage_count();
         if matrix.get_lifestage_count() != expected_lifestage_length {
             return Err("Population vector size does not match matrices.");
         }
         Ok(PvaDeterministicPopulation {
-            initial_population: init_pop,
+            initial_population: initial_population,
             projection_matrix: matrix,
         })
     }
-    // Return a Result enum containing a PvaDeterministicOutput type that holds the output of a determinisitc simulation
-    // given the number of simulation steps to perform (as a u32). This function performs the
-    // actual simulation.
-    //
-    // The function may panic if the Populatiom Matrix is not square or the
-    // lengths of Population Vector and Population Matrix do not match, although this situation should
-    // be prevented by checks when building a PVA Population instance.
+    /// Return a Result enum containing a new PvaDeterministicPopulation instance with the input of a vector containing f64 values (a population vector) and a square set of vector of vectors containing f64 values (a population matrix).    
+    /// # Errors
+    /// Will return `Err<'static str>` if the lengths of the Population Vector the Matrix do not match.
+    /// ```
+    ///use ecolysis_cmd::populations::population_level_simulation::PvaDeterministicPopulation;
+    ///let new_population = PvaDeterministicPopulation::build_from_vectors(vec![12.0, 55.0, 172.0],
+    ///vec![
+    ///vec![0.0, 0.0, 0.9],
+    ///vec![0.6, 0.9, 0.0],
+    ///vec![0.0, 0.95, 0.99]
+    ///]);
+    /// ```
+    pub fn build_from_vectors(
+        initial_population: Vec<f64>,
+        matrix: Vec<Vec<f64>>,
+    ) -> Result<PvaDeterministicPopulation, &'static str> {
+        PvaDeterministicPopulation::build(
+            PopulationVector::new(initial_population),
+            PopulationMatrix::build(matrix)?,
+        )
+    }
+
+    /// Return a Result enum containing a PvaDeterministicOutput type that holds the output of a determinisitc simulation
+    /// given the number of simulation steps to perform (as a u32). This function performs the
+    /// actual simulation.
+    ///
+    /// The function may panic if the Populatiom Matrix is not square or the
+    /// lengths of Population Vector and Population Matrix do not match, although this situation should
+    /// be prevented by checks when building a PVA Population instance.
+    /// ```
+    ///use ecolysis_cmd::populations::population_level_simulation::PvaDeterministicPopulation;
+    ///let new_population = PvaDeterministicPopulation::build_from_vectors(vec![12.0, 55.0, 172.0],
+    ///vec![
+    ///vec![0.0, 0.0, 0.9],
+    ///vec![0.6, 0.9, 0.0],
+    ///vec![0.0, 0.95, 0.99]
+    ///]).unwrap();
+    ///let simulation_output = new_population.deterministic_projection(100);
+    ///simulation_output.print_output();
+    /// ```
+
     pub fn deterministic_projection(&self, iterations: u32) -> PvaDeterministicOutput {
         let mut active_vector = self.initial_population.clone();
         let mut result: Vec<PopulationVector> = Vec::new();
@@ -214,10 +248,23 @@ impl PvaDeterministicOutput {
         }
         println!("{}", string);
     }
-    /// Return a Result enum containg a vector of Population Vectors representing all the data from
-    /// each step of the simulation for a determinisitc model.
-    pub fn return_output(&self) -> &Vec<PopulationVector> {
+    /// Return a vector of Population Vectors representing all the data from
+    /// each step of the simulation for a determinisitc model. Each item is the output of an
+    /// iteration of the simulation. The first item is the first iteration, the last itemn is
+    /// the last iteration of the simulation.
+    pub fn return_typed_output(&self) -> &Vec<PopulationVector> {
         &self.result
+    }
+    /// Return a vecotr of vectors, containing floating point values (Vec<Vec<f64>>), representing
+    /// all the data from each step of the simulation for a determinisic model. Each item in the outer vector is the output of an
+    /// iteration of the simulation. The first item is the first iteration, the last itemn is the last iteration of the simulation. Each of the sub-vectors is a de-typed population vector, representing the demographics of a population.
+
+    pub fn return_numerical_output(&self) -> Vec<Vec<f64>> {
+        let mut num_vec: Vec<Vec<f64>> = Vec::new();
+        for i in &self.result {
+            num_vec.push(i.get_vector().clone());
+        }
+        num_vec
     }
 }
 
@@ -273,7 +320,7 @@ mod tests {
         let correct_result = vec![24.9, 50.8, 273.5];
         let mut temp_vec: Vec<f64> = Vec::new();
         let mut clean_output: Vec<Vec<f64>> = Vec::new();
-        for i in result.return_output() {
+        for i in result.return_typed_output() {
             for j in i.get_vector() {
                 temp_vec.push(((j * 10.0 as f64).round()) / 10.0);
             }
