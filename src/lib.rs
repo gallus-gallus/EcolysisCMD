@@ -5,7 +5,6 @@ pub use populations::population_level_simulation::{
 };
 
 pub fn run() {
-    println!("Welcome to EcolysisCMD, a Rust tool for ecologicial simulation and analysis.");
     main_menu();
 }
 
@@ -33,11 +32,22 @@ mod interface {
         });
         parsed_input
     }
+    fn get_user_float() -> f64 {
+        let parsed_input: f64 = get_user_input().parse().unwrap_or_else(|_| {
+            eprintln!("The input was not a number. Please try again.");
+            get_user_float()
+        });
+        parsed_input
+    }
+
     pub fn main_menu() {
         println!("Welcome to EcolysisCMD, a Rust tool for ecologicial simulation and analysis.");
         println!("Type the number next to the action you wish to perform and press enter.");
         println!("[1] Deterministic Population Viability Analysis");
         let input = get_user_num() as u32;
+        if input == 1 {
+            get_vector_from_user();
+        }
     }
     fn get_csv() -> Result<Vec<Vec<String>>, Box<dyn Error>> {
         let binding = get_file();
@@ -73,6 +83,15 @@ mod interface {
             get_file()
         });
         contents.trim().to_string()
+    }
+    fn get_vector_from_user() -> Vec<Vec<f64>> {
+        println!("Would you like to enter population information manually (1) or by importing a file (2)?");
+        let menu_input = get_user_num();
+        if menu_input == 1 {
+            let float_input = get_user_float();
+            println!("{}", float_input);
+        }
+        return vec![vec![0.05]];
     }
 
     #[cfg(test)]
